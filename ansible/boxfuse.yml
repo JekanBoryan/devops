@@ -18,12 +18,12 @@
       apt:
         name: git
         state: latest
-      
+
     - name: Ensure default-jdk is at the latest version
       apt:
         name: default-jdk
         state: latest
-    
+
     - name: Ensure maven is at the latest version
       apt:
         name: maven
@@ -32,13 +32,13 @@
     - name: Clone git repository
       git:
         repo: 'https://github.com/boxfuse/boxfuse-sample-java-war-hello.git'
-        dest: /tmp
+        dest: /tmp/boxfuse
         clone: yes
 
     - name: Package war file
       command: mvn package
       args:
-        chdir: /tmp/boxfuse-sample-java-war-hello
+        chdir: /tmp/boxfuse
 
 - name: Configure rsync server on mvn hosts
   hosts: mvn
@@ -53,8 +53,8 @@
     - name: Ensure rsync service is started
       service:
         name: rsync
-        state: started
-      
+        state: restarted
+
 - name: Deploy java app to tomcat
   hosts: tomcat
   become: yes
@@ -64,13 +64,14 @@
       apt:
         name: tomcat8
         state: present
-      
-    - name: Transfer file from mvn server with rsync
+
+    - name: Transfer war file to server
       synchronize:
-        src: rsync:/178.154.204.77/tmp/boxfuse-sample-java-war-hello/target
+        src: /tmp/boxfuse/target/hello-1.0.war
         dest: /var/lib/tomcat8/webapps
+      delegate_to: 192.168.56.1
 
     - name: Ensure tomcat server restarted
       service:
-        name: tomcat
+        name: tomcat8
         state: restarted
